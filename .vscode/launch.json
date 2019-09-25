@@ -1,0 +1,11 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - JwtSampleApplication",
+            "request": "launch",
+            "mainClass": "br.com.spring.jwtsample.JwtSampleApplication",
+            "projectName": "jwt-sample"
+        }
+    ]
+}
