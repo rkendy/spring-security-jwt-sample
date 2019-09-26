@@ -28,6 +28,9 @@ public class JwtAuthorizationFilter extends BasicAuthenticationFilter {
         super(authenticationManager);
     }
 
+    /**
+     * For every request, checks if token is present.
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws IOException, ServletException {
@@ -41,6 +44,9 @@ public class JwtAuthorizationFilter extends BasicAuthenticationFilter {
     }
 
 
+    /**
+     * Check token. Exception if something goes wrong (such as token expired).
+     */
     private UsernamePasswordAuthenticationToken getAuthentication(HttpServletRequest request) {
         String token = request.getHeader(JwtConstants.HEADER);
         if(token != null && !token.isEmpty() && token.startsWith(JwtConstants.PREFIX)) {
@@ -50,7 +56,7 @@ public class JwtAuthorizationFilter extends BasicAuthenticationFilter {
                                                 .setSigningKey(signinkey)
                                                 .parseClaimsJws(token.replace(JwtConstants.PREFIX, ""));
                 String username = parsedToken.getBody().getSubject();
-                List auths = ((List<?>)parsedToken.getBody().get("rol"))
+                List<SimpleGrantedAuthority> auths = ((List<?>)parsedToken.getBody().get(JwtConstants.ROLES_STR))
                                                     .stream()
                                                     .map(authority -> new SimpleGrantedAuthority((String)authority))
                                                     .collect(Collectors.toList());
@@ -59,19 +65,11 @@ public class JwtAuthorizationFilter extends BasicAuthenticationFilter {
                 }
             }
             catch(Exception e) {
-                System.out.println(e);
+                // Log Exception...
+                return null;
             }
         }
         return null;
     }
 
-    // private List<String> getRoles(Jws<Claims> parsedToken) {        
-    //     Object obj = parsedToken.getBody().get("rol");
-
-    //     return ((List<String>)parsedToken.getBody().get("rol"))
-    //                                                 .stream()
-    //                                                 .map(authority -> new SimpleGrantedAuthority((String)authority))
-    //                                                 .collect(Collectors.toList());
-    // }
-    
 }

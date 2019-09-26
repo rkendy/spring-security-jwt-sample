@@ -41,6 +41,19 @@ public class SomeControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
+    private ResultActions login(String username, String password) throws Exception {
+        return mockMvc.perform(MockMvcRequestBuilders
+            .post("/login")
+            .param("username", username)
+            .param("password", password));
+    }
+
+    private String loginAndReturnToken(String user, String password) throws Exception {
+        ResultActions result = login(user, password);            
+        String headerStr = result.andReturn().getResponse().getHeader(JwtConstants.HEADER);
+        return headerStr.substring(JwtConstants.PREFIX.length());
+    }
+
     @Test
     public void testControllerNotNull() {
         assertNotNull(controller);
@@ -53,26 +66,11 @@ public class SomeControllerTest {
             .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
-
     @Test
     public void shouldReturn403() throws Exception {
         this.mockMvc.perform(MockMvcRequestBuilders.get("/api/private"))
             .andDo(MockMvcResultHandlers.print())
             .andExpect(MockMvcResultMatchers.status().isForbidden());
-    }
-
-
-    private ResultActions login(String username, String password) throws Exception {
-        return mockMvc.perform(MockMvcRequestBuilders
-            .post("/login")
-            .param("username", username)
-            .param("password", password));
-    }
-
-    private String loginAndReturnToken(String user, String password) throws Exception {
-        ResultActions result = login(user, password);            
-        String headerStr = result.andReturn().getResponse().getHeader(JwtConstants.HEADER);
-        return headerStr.substring(JwtConstants.PREFIX.length());
     }
 
     @Test
@@ -120,7 +118,5 @@ public class SomeControllerTest {
                             .header(JwtConstants.HEADER, JwtConstants.PREFIX + token))
                 .andExpect(MockMvcResultMatchers.status().isOk());
     }
-    
-
     
 }

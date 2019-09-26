@@ -20,17 +20,24 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 
 /**
- * JwtAuthenticationFilter
+ * Filter responsible for intercepting login, delegating authentication, and generating JWT token.
  */
 public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
     private final AuthenticationManager authManager;
 
+    /**
+     * Configuration of interception
+     */
     public JwtAuthenticationFilter(AuthenticationManager authManager) {
         this.authManager = authManager;
         setFilterProcessesUrl("/login");
     }
 
+    /**
+     * Getting input (username and password) and delegating authentication.
+     * In our case, CustomAuthenticationProvider.
+     */
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
             throws AuthenticationException {
@@ -40,6 +47,9 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         return authManager.authenticate(authToken);
     }
 
+    /**
+     * Generating token and setting in the response Header.
+     */
     @Override
     protected void successfulAuthentication(
         HttpServletRequest request, HttpServletResponse response, 
@@ -60,7 +70,7 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
                             .setAudience(JwtConstants.AUDIENCE)
                             .setSubject(username)
                             .setExpiration(new Date(System.currentTimeMillis() + JwtConstants.EXPIRATION))
-                            .claim("rol", roles)
+                            .claim(JwtConstants.ROLES_STR, roles)
                             .compact();
 
         response.setHeader(JwtConstants.HEADER, JwtConstants.PREFIX + token);
