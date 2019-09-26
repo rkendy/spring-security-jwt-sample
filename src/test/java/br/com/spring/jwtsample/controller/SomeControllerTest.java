@@ -50,8 +50,7 @@ public class SomeControllerTest {
 
     private String loginAndReturnToken(String user, String password) throws Exception {
         ResultActions result = login(user, password);            
-        String headerStr = result.andReturn().getResponse().getHeader(JwtConstants.HEADER);
-        return headerStr.substring(JwtConstants.PREFIX.length());
+        return result.andReturn().getResponse().getHeader(JwtConstants.HEADER);
     }
 
     @Test
@@ -67,10 +66,10 @@ public class SomeControllerTest {
     }
 
     @Test
-    public void shouldReturn403() throws Exception {
+    public void shouldReturn401() throws Exception {
         this.mockMvc.perform(MockMvcRequestBuilders.get("/api/private"))
             .andDo(MockMvcResultHandlers.print())
-            .andExpect(MockMvcResultMatchers.status().isForbidden());
+            .andExpect(MockMvcResultMatchers.status().isUnauthorized());
     }
 
     @Test
@@ -84,7 +83,7 @@ public class SomeControllerTest {
         byte[] signinkey = JwtConstants.SECRET.getBytes();
         Jws<Claims> parsedToken = Jwts.parser()
                                     .setSigningKey(signinkey)
-                                    .parseClaimsJws(token.replace(JwtConstants.HEADER, ""));
+                                    .parseClaimsJws(token.replace(JwtConstants.PREFIX, ""));
         String username = parsedToken.getBody().getSubject();
         Date date = parsedToken.getBody().getExpiration();
 
