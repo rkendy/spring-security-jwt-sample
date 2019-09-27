@@ -1,10 +1,8 @@
 package br.com.spring.jwtsample.controller;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -23,25 +21,23 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
-import br.com.spring.jwtsample.security.JwtConstants;
+import br.com.spring.jwtsample.security.JwtSecurityUtil;
+import br.com.spring.jwtsample.security.SecurityConfig;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jws;
-import io.jsonwebtoken.Jwts;
-
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import(br.com.spring.jwtsample.security.SecurityConfig.class)      // Habilita configuracao de seguranca
-public class SomeControllerTest {
-
-    @Autowired
-    private SomeController controller;
+@Import({SecurityConfig.class})      // Habilita configuracao de seguranca
+public class SecurityTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    private ResultActions login(String username, String password) throws Exception {
+    @Autowired
+    private JwtSecurityUtil jwtSecurityUtil;
+
+    private ResultActions performLogin(String username, String password) throws Exception {
         return mockMvc.perform(MockMvcRequestBuilders
             .post("/login")
             .param("username", username)
@@ -49,14 +45,10 @@ public class SomeControllerTest {
     }
 
     private String loginAndReturnToken(String user, String password) throws Exception {
-        ResultActions result = login(user, password);            
-        return result.andReturn().getResponse().getHeader(JwtConstants.HEADER);
+        ResultActions result = performLogin(user, password);            
+        return result.andReturn().getResponse().getHeader(JwtSecurityUtil.HEADER);
     }
 
-    @Test
-    public void testControllerNotNull() {
-        assertNotNull(controller);
-    }
 
     @Test
     public void shouldReturn200() throws Exception {
@@ -74,22 +66,21 @@ public class SomeControllerTest {
 
     @Test
     public void shouldLoginOk() throws Exception {
-        login("username", "password").andExpect(MockMvcResultMatchers.status().isOk());        
+        performLogin("username", "password").andExpect(MockMvcResultMatchers.status().isOk());        
     }
 
     @Test
     public void shouldLoginAndReturnValidToken() throws Exception {
         String token = loginAndReturnToken("user", "password");
-        byte[] signinkey = JwtConstants.SECRET.getBytes();
-        Jws<Claims> parsedToken = Jwts.parser()
-                                    .setSigningKey(signinkey)
-                                    .parseClaimsJws(token.replace(JwtConstants.PREFIX, ""));
-        String username = parsedToken.getBody().getSubject();
-        Date date = parsedToken.getBody().getExpiration();
+        
+        Claims body = jwtSecurityUtil.parseToken(token);
+        String username = jwtSecurityUtil.getUsername(body);
+        Date date = jwtSecurityUtil.getExpirationDate(body);
 
         assertEquals("user", username);
+        
         LocalDateTime afterExpiration = LocalDateTime.now();
-        afterExpiration = afterExpiration.plus(JwtConstants.EXPIRATION + 1000, ChronoUnit.MILLIS);
+        afterExpiration = afterExpiration.plus(jwtSecurityUtil.getExpiration() + 1000, ChronoUnit.MILLIS);
         Date afterExpirationDate = Date.from(afterExpiration.atZone(ZoneId.systemDefault()).toInstant());
         assertTrue(date.before(afterExpirationDate));
     }
@@ -98,7 +89,7 @@ public class SomeControllerTest {
     public void shouldLoginAndAccessWithoutAdminRole() throws Exception {
         String token = loginAndReturnToken("user", "password");
         mockMvc.perform(MockMvcRequestBuilders.get("/api/private")
-                            .header(JwtConstants.HEADER, JwtConstants.PREFIX + token))
+                            .header(JwtSecurityUtil.HEADER, JwtSecurityUtil.PREFIX + token))
                 .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
@@ -106,7 +97,7 @@ public class SomeControllerTest {
     public void shouldLoginAndNotAccessWithoutAdminRole() throws Exception {
         String token = loginAndReturnToken("user", "password");
         mockMvc.perform(MockMvcRequestBuilders.get("/api/private/admin")
-                            .header(JwtConstants.HEADER, JwtConstants.PREFIX + token))
+                            .header(JwtSecurityUtil.HEADER, JwtSecurityUtil.PREFIX + token))
                 .andExpect(MockMvcResultMatchers.status().isForbidden());
     }
     
@@ -114,7 +105,7 @@ public class SomeControllerTest {
     public void shouldLoginAndAccessWithAdminRole() throws Exception {
         String token = loginAndReturnToken("admin", "password");
         mockMvc.perform(MockMvcRequestBuilders.get("/api/private/admin")
-                            .header(JwtConstants.HEADER, JwtConstants.PREFIX + token))
+                            .header(JwtSecurityUtil.HEADER, JwtSecurityUtil.PREFIX + token))
                 .andExpect(MockMvcResultMatchers.status().isOk());
     }
     

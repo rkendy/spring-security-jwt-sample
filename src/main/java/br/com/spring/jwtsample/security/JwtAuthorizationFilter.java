@@ -2,7 +2,6 @@ package br.com.spring.jwtsample.security;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -16,16 +15,18 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jws;
-import io.jsonwebtoken.Jwts;
+
 
 /**
  * Filter responsible for checking if token is present in the request.
  */
 public class JwtAuthorizationFilter extends BasicAuthenticationFilter {
 
-    public JwtAuthorizationFilter(AuthenticationManager authenticationManager) {
+    private JwtSecurityUtil jwtSecurityUtil;
+
+    public JwtAuthorizationFilter(AuthenticationManager authenticationManager, JwtSecurityUtil jwtUtil) {
         super(authenticationManager);
+        jwtSecurityUtil = jwtUtil;
     }
 
     /**
@@ -48,26 +49,15 @@ public class JwtAuthorizationFilter extends BasicAuthenticationFilter {
      * Check token. Exception if something goes wrong (such as token expired).
      */
     private UsernamePasswordAuthenticationToken getAuthentication(HttpServletRequest request) {
-        String token = request.getHeader(JwtConstants.HEADER);
-        if(token != null && !token.isEmpty() && token.startsWith(JwtConstants.PREFIX)) {
-            try {
-                byte[] signinkey = JwtConstants.SECRET.getBytes();
-                Jws<Claims> parsedToken = Jwts.parser()
-                                                .setSigningKey(signinkey)
-                                                .parseClaimsJws(token.replace(JwtConstants.PREFIX, ""));
-                String username = parsedToken.getBody().getSubject();
-                List<SimpleGrantedAuthority> auths = ((List<?>)parsedToken.getBody().get(JwtConstants.ROLES_STR))
-                                                    .stream()
-                                                    .map(authority -> new SimpleGrantedAuthority((String)authority))
-                                                    .collect(Collectors.toList());
-                if(username != null && !username.isEmpty()) {
-                    return new UsernamePasswordAuthenticationToken(username, null, auths);
-                }
-            }
-            catch(Exception e) {
-                // Log Exception...
-                return null;
-            }
+
+        try {
+            Claims body = jwtSecurityUtil.parseToken(request);
+            List<SimpleGrantedAuthority> auths = jwtSecurityUtil.getRoles(body);
+            String username = jwtSecurityUtil.getUsername(body);
+            return new UsernamePasswordAuthenticationToken(username, null, auths);
+        }
+        catch(Exception e) {
+            // Log exception...
         }
         return null;
     }

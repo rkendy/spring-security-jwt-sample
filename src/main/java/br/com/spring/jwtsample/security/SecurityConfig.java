@@ -20,6 +20,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter{
     @Autowired
     private RestAuthenticationEntryPoint restAuthenticationEntryPoint;
 
+    @Autowired
+    private JwtSecurityUtil jwtUtil;
+
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http.csrf().disable();
@@ -28,8 +31,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter{
             .antMatchers("/api/private/**").authenticated()
             .antMatchers("/api/public/**").permitAll()
             .antMatchers("/login").permitAll();
-        http.addFilter(new JwtAuthenticationFilter(authenticationManager()))
-            .addFilter(new JwtAuthorizationFilter(authenticationManager()))
+        http.addFilter(new JwtAuthenticationFilter(authenticationManager(),jwtUtil))
+            .addFilter(new JwtAuthorizationFilter(authenticationManager(),jwtUtil))
             .sessionManagement()
             .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
         http.exceptionHandling().authenticationEntryPoint(restAuthenticationEntryPoint);

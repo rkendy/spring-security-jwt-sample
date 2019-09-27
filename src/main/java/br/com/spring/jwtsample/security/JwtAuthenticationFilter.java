@@ -1,6 +1,5 @@
 package br.com.spring.jwtsample.security;
 
-import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -15,28 +14,28 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
-
 /**
- * Filter responsible for intercepting login, delegating authentication, and generating JWT token.
+ * Filter responsible for intercepting login, delegating authentication, and
+ * generating JWT token.
  */
 public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
     private final AuthenticationManager authManager;
+    private final JwtSecurityUtil jwtSecurityUtil;
 
     /**
      * Configuration of interception
      */
-    public JwtAuthenticationFilter(AuthenticationManager authManager) {
+    public JwtAuthenticationFilter(AuthenticationManager authManager, JwtSecurityUtil jwtUtil) {
         this.authManager = authManager;
+        this.jwtSecurityUtil = jwtUtil;
         setFilterProcessesUrl("/login");
+
     }
 
     /**
-     * Getting input (username and password) and delegating authentication.
-     * In our case, CustomAuthenticationProvider.
+     * Getting input (username and password) and delegating authentication. In our
+     * case, CustomAuthenticationProvider.
      */
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
@@ -51,29 +50,15 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
      * Generating token and setting in the response Header.
      */
     @Override
-    protected void successfulAuthentication(
-        HttpServletRequest request, HttpServletResponse response, 
-        FilterChain filterChain, 
-        Authentication authentication) {
+    protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response,
+            FilterChain filterChain, Authentication authentication) {
 
-        String username = (String)authentication.getPrincipal();
-        List<String> roles = authentication.getAuthorities()
-                                            .stream()
-                                            .map(GrantedAuthority::getAuthority)
-                                            .collect(Collectors.toList());
-        
-        byte[] signinKey = JwtConstants.SECRET.getBytes();
-        String token = Jwts.builder()
-                            .signWith(Keys.hmacShaKeyFor(signinKey),SignatureAlgorithm.HS512)
-                            .setHeaderParam("typ", JwtConstants.TYPE)
-                            .setIssuer(JwtConstants.ISSUER)
-                            .setAudience(JwtConstants.AUDIENCE)
-                            .setSubject(username)
-                            .setExpiration(new Date(System.currentTimeMillis() + JwtConstants.EXPIRATION))
-                            .claim(JwtConstants.ROLES_STR, roles)
-                            .compact();
+        String username = (String) authentication.getPrincipal();
+        List<String> roles = authentication.getAuthorities().stream().map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList());
 
-        response.setHeader(JwtConstants.HEADER, JwtConstants.PREFIX + token);
+        String token = jwtSecurityUtil.createToken(username, roles);
+        response.setHeader(JwtSecurityUtil.HEADER, JwtSecurityUtil.PREFIX + token);
     }
-    
+
 }
