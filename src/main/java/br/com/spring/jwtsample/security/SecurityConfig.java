@@ -13,15 +13,11 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 @EnableWebSecurity
 public class SecurityConfig extends WebSecurityConfigurerAdapter{
 
-
     @Autowired
     private CustomAuthenticationProvider authProvider;
 
     @Autowired
     private RestAuthenticationEntryPoint restAuthenticationEntryPoint;
-
-    @Autowired
-    private JwtSecurityUtil jwtUtil;
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
@@ -31,8 +27,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter{
             .antMatchers("/api/private/**").authenticated()
             .antMatchers("/api/public/**").permitAll()
             .antMatchers("/login").permitAll();
-        http.addFilter(new JwtAuthenticationFilter(authenticationManager(),jwtUtil))
-            .addFilter(new JwtAuthorizationFilter(authenticationManager(),jwtUtil))
+        // http.addFilter(new JwtAuthenticationFilter(authenticationManager(),jwtUtil))
+        http.addFilter(new JwtAuthenticationFilter(authenticationManager()))
+            .addFilter(new JwtAuthorizationFilter(authenticationManager()))
             .sessionManagement()
             .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
         http.exceptionHandling().authenticationEntryPoint(restAuthenticationEntryPoint);

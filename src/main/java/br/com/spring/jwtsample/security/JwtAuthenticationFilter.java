@@ -21,17 +21,17 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
     private final AuthenticationManager authManager;
-    private final JwtSecurityUtil jwtSecurityUtil;
+    private JwtSecurityUtil jwtSecurityUtil;
 
     /**
      * Configuration of interception
      */
-    public JwtAuthenticationFilter(AuthenticationManager authManager, JwtSecurityUtil jwtUtil) {
+    public JwtAuthenticationFilter(AuthenticationManager authManager) {
         this.authManager = authManager;
-        this.jwtSecurityUtil = jwtUtil;
         setFilterProcessesUrl("/login");
-
+        
     }
+ 
 
     /**
      * Getting input (username and password) and delegating authentication. In our
@@ -57,6 +57,7 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         List<String> roles = authentication.getAuthorities().stream().map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
 
+        if(jwtSecurityUtil == null) jwtSecurityUtil = JwtSecurityUtil.getInstance(request);
         String token = jwtSecurityUtil.createToken(username, roles);
         response.setHeader(JwtSecurityUtil.HEADER, JwtSecurityUtil.PREFIX + token);
     }

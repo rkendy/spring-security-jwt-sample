@@ -4,11 +4,14 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.WebApplicationContext;
+import org.springframework.web.context.support.WebApplicationContextUtils;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
@@ -26,6 +29,13 @@ public class JwtSecurityUtil {
     public static String AUDIENCE="secure-app";
     public static String ROLES_STR = "roles";
 
+    public static JwtSecurityUtil getInstance(HttpServletRequest req) {
+        ServletContext sc = req.getServletContext();
+        WebApplicationContext wac = WebApplicationContextUtils.getWebApplicationContext(sc);
+        return wac.getBean(JwtSecurityUtil.class);
+    }
+
+
     @Value("${jwt.secret}")
     private String secret;
 
@@ -39,7 +49,6 @@ public class JwtSecurityUtil {
     public Claims parseToken(String token) {
         return parseTokenStr(token);
     }
-
 
     public List<SimpleGrantedAuthority> getRoles(Claims body) {
         return ((List<?>)body.get(ROLES_STR))

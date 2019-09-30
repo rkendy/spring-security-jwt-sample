@@ -24,9 +24,8 @@ public class JwtAuthorizationFilter extends BasicAuthenticationFilter {
 
     private JwtSecurityUtil jwtSecurityUtil;
 
-    public JwtAuthorizationFilter(AuthenticationManager authenticationManager, JwtSecurityUtil jwtUtil) {
+    public JwtAuthorizationFilter(AuthenticationManager authenticationManager) {
         super(authenticationManager);
-        jwtSecurityUtil = jwtUtil;
     }
 
     /**
@@ -51,6 +50,7 @@ public class JwtAuthorizationFilter extends BasicAuthenticationFilter {
     private UsernamePasswordAuthenticationToken getAuthentication(HttpServletRequest request) {
 
         try {
+            if(jwtSecurityUtil == null) jwtSecurityUtil = JwtSecurityUtil.getInstance(request);            
             Claims body = jwtSecurityUtil.parseToken(request);
             List<SimpleGrantedAuthority> auths = jwtSecurityUtil.getRoles(body);
             String username = jwtSecurityUtil.getUsername(body);
