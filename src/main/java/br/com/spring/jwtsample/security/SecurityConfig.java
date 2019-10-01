@@ -2,7 +2,6 @@ package br.com.spring.jwtsample.security;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -26,7 +25,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter{
             .antMatchers("/api/private/**").authenticated()
             .antMatchers("/api/public/**").permitAll()
             .antMatchers("/login").permitAll();
-        // http.addFilter(new JwtAuthenticationFilter(authenticationManager(),jwtUtil))
         http.addFilter(new JwtAuthenticationFilter(authenticationManager()))
             .addFilter(new JwtAuthorizationFilter(authenticationManager()))
             .sessionManagement()
